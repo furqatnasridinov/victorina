@@ -1,4 +1,5 @@
- const data = [
+// Geography 
+const _geography = [
     {
       "id": 1,
       "question": "Где зародилась география как наука?",
@@ -2187,4 +2188,10 @@
         },
         "answer": "B"
       }
-  ];
+];
+
+// Main data object
+const data = {
+    "География": _geography,
+    "Экология": [],
+};

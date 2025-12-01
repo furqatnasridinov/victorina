@@ -1,5 +1,6 @@
 // import data
 
+
 // Game state
 let gameState = {
     questions: [],
@@ -8,14 +9,17 @@ let gameState = {
     skippedCount: 0,
     maxSkips: 3,
     totalQuestions: 28,
-    requiredCompleted: 25
+    requiredCompleted: 25,
+    selectedSubject: null
 };
 
 // DOM elements
 const startScreen = document.getElementById('start-screen');
+const subjectScreen = document.getElementById('subject-screen');
 const quizScreen = document.getElementById('quiz-screen');
 const resultsScreen = document.getElementById('results-screen');
 const startBtn = document.getElementById('start-btn');
+const backToStartBtn = document.getElementById('back-to-start-btn');
 const skipBtn = document.getElementById('skip-btn');
 const nextBtn = document.getElementById('next-btn');
 const restartBtn = document.getElementById('restart-btn');
@@ -26,15 +30,14 @@ const skippedCountSpan = document.getElementById('skipped-count');
 const correctCountQuizSpan = document.getElementById('correct-count-quiz');
 const incorrectCountQuizSpan = document.getElementById('incorrect-count-quiz');
 const progressFill = document.getElementById('progress');
+const subjectsList = document.getElementById('subjects-list');
 
 // Initialize game
 function initGame() {
-    // Select 28 random questions
-    const shuffled = [...data].sort(() => 0.5 - Math.random());
-    gameState.questions = shuffled.slice(0, gameState.totalQuestions);
     gameState.currentQuestionIndex = 0;
     gameState.answers = [];
     gameState.skippedCount = 0;
+    gameState.selectedSubject = null;
     
     showScreen('start');
 }
@@ -42,11 +45,15 @@ function initGame() {
 // Show specific screen
 function showScreen(screenName) {
     startScreen.classList.remove('active');
+    subjectScreen.classList.remove('active');
     quizScreen.classList.remove('active');
     resultsScreen.classList.remove('active');
     
     if (screenName === 'start') {
         startScreen.classList.add('active');
+    } else if (screenName === 'subject') {
+        subjectScreen.classList.add('active');
+        loadSubjects();
     } else if (screenName === 'quiz') {
         quizScreen.classList.add('active');
         loadQuestion();
@@ -54,6 +61,80 @@ function showScreen(screenName) {
         resultsScreen.classList.add('active');
         showResults();
     }
+}
+
+// Load subjects list
+function loadSubjects() {
+    subjectsList.innerHTML = '';
+    //const myData = data;
+    // Check if data exists
+    if (typeof data === 'undefined') {
+        console.error('Data is not defined!');
+        subjectsList.innerHTML = '<p style="color: var(--error-color);">Ошибка: данные не загружены</p>';
+        return;
+    }
+    
+    console.log('Loading subjects, data type:', typeof data, 'isArray:', Array.isArray(data));
+    console.log('Data keys:', typeof data === 'object' && !Array.isArray(data) ? Object.keys(data) : 'N/A');
+    
+    // Check if data is an object (new structure) or array (old structure)
+    if (Array.isArray(data)) {
+        // Old structure - show single subject
+        const subjectCard = document.createElement('div');
+        subjectCard.className = 'subject-card';
+        subjectCard.innerHTML = `
+            <div class="subject-icon">📚</div>
+            <div class="subject-name">Общий тест</div>
+            <div class="subject-count">${data.length} вопросов</div>
+        `;
+        subjectCard.addEventListener('click', () => {
+            startQuizWithSubject('Общий тест', data);
+        });
+        subjectsList.appendChild(subjectCard);
+    } else if (typeof data === 'object' && data !== null) {
+        // New structure - show all subjects with questions
+        const subjects = Object.keys(data);
+        
+        if (subjects.length === 0) {
+            subjectsList.innerHTML = '<p style="color: var(--text-secondary);">Нет доступных предметов</p>';
+            return;
+        }
+        
+        subjects.forEach(subjectName => {
+            const questions = data[subjectName];
+            const hasZeroQuestions = questions.length === 0;
+            const subjectCard = document.createElement('div');
+            subjectCard.className = 'subject-card';
+            subjectCard.innerHTML = `
+                <div class="subject-icon">📚</div>
+                <div class="subject-name">${subjectName}</div>
+                <div class="subject-count">${questions.length} вопросов</div>
+            `;
+            subjectCard.addEventListener('click', () => {
+                if (!hasZeroQuestions) {
+                    startQuizWithSubject(subjectName, questions);
+                }
+                else {
+                    alert('Нет доступных вопросов для этого предмета');
+                }
+            });
+            subjectsList.appendChild(subjectCard);
+        });
+    } else {
+        console.error('Invalid data structure:', typeof data);
+        subjectsList.innerHTML = '<p style="color: var(--error-color);">Ошибка: неверная структура данных</p>';
+    }
+}
+
+// Start quiz with selected subject
+function startQuizWithSubject(subjectName, questions) {
+    gameState.selectedSubject = subjectName;
+    
+    // Select 28 random questions from selected subject
+    const shuffled = [...questions].sort(() => 0.5 - Math.random());
+    gameState.questions = shuffled.slice(0, gameState.totalQuestions);
+    
+    showScreen('quiz');
 }
 
 // Calculate correct answers count
@@ -313,8 +394,11 @@ function showResults() {
 
 // Event listeners
 startBtn.addEventListener('click', () => {
-    initGame();
-    showScreen('quiz');
+    showScreen('subject');
+});
+
+backToStartBtn.addEventListener('click', () => {
+    showScreen('start');
 });
 
 skipBtn.addEventListener('click', skipQuestion);
